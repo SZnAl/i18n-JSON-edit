@@ -16,16 +16,48 @@
 				<div class="tips">*请先导入TXT文件后进行翻译</div>
 			</div>
 			<div class="fixed">
-				<h1>字段名 - 翻译后的内容</h1>
+				<h3>字段名 - 翻译后的内容</h3>
 				<div v-show="obj != undefined">
 					<div class="tips">翻译完成或未完成需要保存请点击：</div>
 					<el-button type="success" @click="exportText">导出TXT文件</el-button>
 				</div>
 			</div>
+
+			<div class="topBtnBox">
+				<el-tooltip
+					class="item"
+					effect="dark"
+					content="点击回到页面顶部"
+					placement="top"
+				>
+					<el-button
+						class="iconBtn"
+						type="success"
+						icon="el-icon-top"
+						@click="clickTop"
+						circle
+					></el-button>
+				</el-tooltip>
+				<el-tooltip
+					class="item"
+					effect="dark"
+					content="点击显示帮助信息"
+					placement="top"
+				>
+					<el-button
+						class="iconBtn"
+						icon="el-icon-info"
+						circle
+						@click="dialogVisible = true"
+					></el-button>
+				</el-tooltip>
+			</div>
+
 			<div
 				v-for="(value1, key1, index1) in this.obj"
 				:key="index1"
 				class="flex"
+				:id="'area' + index1"
 			>
 				<h2>所属板块：{{ key1 }}</h2>
 
@@ -33,12 +65,62 @@
 					v-for="(value2, key2, index2) in value1"
 					:key="index2"
 					:class="index2 % 2 == 0 ? 'green' : 'pink'"
+					style="display: flex"
 				>
-					<span>{{ key2 }}:</span>
-					<input v-model="obj[key1][key2]" />
+					<div class="left" style="min-width: 220px">
+						<span>{{ key2 }}:</span>
+					</div>
+					<div class="right">
+						<input style="min-width: 250px" v-model="obj[key1][key2]" />
+					</div>
 				</div>
 			</div>
 		</div>
+
+		<!-- 点击跳转到指定模块 -->
+		<div class="elevator">
+			<div class="elevatorTitle">
+				<el-tooltip
+					class="item"
+					effect="dark"
+					content="点击下方板块名，快速跳转到对应板块"
+					placement="left"
+				>
+					<div>快速跳转对应板块</div>
+				</el-tooltip>
+			</div>
+			<div v-for="(value1, key1, index1) in this.obj" :key="index1">
+				<div class="elevatorItem">
+					<a :href="'#area' + index1">{{ index1 + 1 + ' : ' + key1 }}</a>
+				</div>
+			</div>
+		</div>
+
+		<el-dialog title="使用提示" :visible.sync="dialogVisible" width="40%">
+			<div class="tipsText">
+				1.选择要翻译的语言后，<span class="tips">导入.txt文件</span>
+			</div>
+			<div class="tipsText">
+				2.右侧快速跳转区域为：<span class="tips"
+					>点击需要翻译的板块后快速跳转到对应板块</span
+				>
+			</div>
+			<div class="tipsText">
+				3.底部绿色圆形向上箭头状按钮为<span class="tips"
+					>[快速跳转到页面顶部]</span
+				>
+			</div>
+			<div class="tipsText">
+				4.翻译完成后一定要点击<span class="tips">[导出TXT文件]</span
+				>按钮，将翻译后的文件进行导出
+			</div>
+
+			<span slot="footer" class="dialog-footer">
+				<el-button type="primary" @click="dialogVisible = false"
+					>确 定</el-button
+				>
+			</span>
+		</el-dialog>
 	</div>
 </template>
 
@@ -48,6 +130,7 @@ export default {
 	props: {},
 	data() {
 		return {
+			dialogVisible: true,
 			obj: undefined,
 			input: ['', '', ''],
 			languageVlue: undefined,
@@ -1730,6 +1813,8 @@ export default {
 			document.body.removeChild(a);
 			window.URL.revokeObjectURL(url);
 		},
+
+		// 导出txt
 		exportText() {
 			const objectToExport = JSON.stringify(this.obj);
 
@@ -1748,6 +1833,11 @@ export default {
 			const dateTime = date + ' ' + time;
 			const fileName = `${this.languageVlue}(${dateTime}).txt`;
 			this.exportAsTextFile(objectToExport, fileName);
+
+			this.$message({
+				message: '导出成功！',
+				type: 'success',
+			});
 		},
 
 		importText() {
@@ -1764,6 +1854,11 @@ export default {
 			};
 			input.click();
 		},
+
+		// 返回顶部
+		clickTop() {
+			window.scrollTo(0, 0);
+		},
 	},
 };
 </script>
@@ -1774,16 +1869,36 @@ export default {
 	padding: 0 200px;
 }
 .fixed {
-	width: 400px;
-	height: 200px;
+	width: 250px;
+	height: 150px;
 	padding-left: 20px;
 	position: fixed;
-	right: 20vw;
-	top: 100px;
+	right: 35vw;
+	top: 80px;
 	background-color: #f1f1f1;
 	backdrop-filter: saturate(100%) blur(4px);
 	border-radius: 10px;
 }
+
+/* 返回顶部 */
+.topBtnBox {
+	position: fixed;
+	right: 45vw;
+	bottom: 70px;
+}
+.topBtn {
+	width: 80px;
+	height: 40px;
+	background: rgb(79, 107, 233);
+	border: #f1f1f1 1px solid;
+	border-radius: 10px;
+	color: #fff;
+}
+
+.iconBtn {
+	font-size: 20px !important ;
+}
+
 .tips {
 	color: red;
 }
@@ -1797,5 +1912,34 @@ export default {
 
 .flex {
 	width: 500px;
+}
+
+/* 快速跳转 */
+.elevator {
+	width: 400px;
+	height: 100vh;
+	overflow: scroll;
+	position: fixed;
+	top: 0;
+	right: 6vw;
+	display: flex;
+	flex-wrap: wrap;
+	flex-direction: row;
+}
+.elevatorTitle {
+	width: 400px;
+	font-size: 22px;
+	font-weight: 600;
+}
+.elevatorItem {
+	width: 200px;
+}
+
+.el-dialog {
+	border-radius: 20px !important;
+}
+.tipsText {
+	font-size: 18px;
+	font-weight: 400;
 }
 </style>
