@@ -1,7 +1,11 @@
 <template>
 	<div class="hello">
 		<span>选择翻译的目标语言：</span
-		><el-select v-model="languageVlue" placeholder="选择语言">
+		><el-select
+			v-model="languageVlue"
+			placeholder="选择语言"
+			@change="changeLangValue"
+		>
 			<el-option
 				v-for="item in languageList"
 				:key="item.value"
@@ -18,8 +22,10 @@
 			<div class="fixed">
 				<h3>字段名 - 翻译后的内容</h3>
 				<div v-show="obj != undefined">
-					<div class="tips">翻译完成或未完成需要保存请点击：</div>
-					<el-button type="success" @click="exportText">导出TXT文件</el-button>
+					<div class="tips">未完成暂存到缓存下次继续用：</div>
+					<el-button type="primary" @click="handleCache">缓存文件</el-button>
+					<div class="tips">翻译完成点击导出：</div>
+					<el-button type="success" @click="exportText">导出文件</el-button>
 				</div>
 			</div>
 
@@ -78,7 +84,7 @@
 		</div>
 
 		<!-- 点击跳转到指定模块 -->
-		<div class="elevator">
+		<div class="elevator" v-if="languageVlue !== undefined">
 			<div class="elevatorTitle">
 				<el-tooltip
 					class="item"
@@ -98,20 +104,24 @@
 
 		<el-dialog title="使用提示" :visible.sync="dialogVisible" width="40%">
 			<div class="tipsText">
-				1.选择要翻译的语言后，<span class="tips">导入.txt文件</span>
+				1.选择要翻译的语言后，<span style="color: #409eff">导入.txt文件</span>
 			</div>
 			<div class="tipsText">
-				2.右侧快速跳转区域为：<span class="tips"
+				2.右侧快速跳转区域为：<span style="color: #f78989"
 					>点击需要翻译的板块后快速跳转到对应板块</span
 				>
 			</div>
 			<div class="tipsText">
-				3.底部绿色圆形向上箭头状按钮为<span class="tips"
+				3.底部绿色圆形向上箭头状按钮为:<span style="color: #85ce61"
 					>[快速跳转到页面顶部]</span
 				>
 			</div>
 			<div class="tipsText">
-				4.翻译完成后一定要点击<span class="tips">[导出TXT文件]</span
+				4.还未翻译完成的，点击<span style="color: #409eff">[缓存文件]</span
+				>按钮，将还没有完成翻译的文件保存至缓存里，下次继续使用
+			</div>
+			<div class="tipsText">
+				4.翻译完成后一定要点击<span style="color: #85ce61">[导出文件]</span
 				>按钮，将翻译后的文件进行导出
 			</div>
 
@@ -130,6 +140,7 @@ export default {
 	props: {},
 	data() {
 		return {
+			time: '',
 			dialogVisible: true,
 			obj: undefined,
 			input: ['', '', ''],
@@ -143,6 +154,34 @@ export default {
 		};
 	},
 	mounted() {
+		if (window.localStorage.getItem('obj') == null) {
+			console.log('缓存无数据');
+		} else {
+			this.obj = JSON.parse(window.localStorage.getItem('obj'));
+			// 获取当前日期时间
+			const now = new Date();
+			const year = now.getFullYear();
+			const month = ('0' + (now.getMonth() + 1)).slice(-2);
+			const day = ('0' + now.getDate()).slice(-2);
+			const hours = ('0' + now.getHours()).slice(-2);
+			const minutes = ('0' + now.getMinutes()).slice(-2);
+			const seconds = ('0' + now.getSeconds()).slice(-2);
+
+			const formattedTime =
+				year +
+				'年' +
+				month +
+				'月' +
+				day +
+				'日' +
+				hours +
+				':' +
+				minutes +
+				':' +
+				seconds;
+			window.localStorage.setItem('time', formattedTime);
+			this.time = formattedTime;
+		}
 		// this.obj = {
 		// 	// 系统公共
 		// 	system: {
@@ -1801,6 +1840,70 @@ export default {
 	},
 
 	methods: {
+		//缓存文件
+		handleCache() {
+			// 获取当前日期时间
+			const now = new Date();
+			const year = now.getFullYear();
+			const month = ('0' + (now.getMonth() + 1)).slice(-2);
+			const day = ('0' + now.getDate()).slice(-2);
+			const hours = ('0' + now.getHours()).slice(-2);
+			const minutes = ('0' + now.getMinutes()).slice(-2);
+			const seconds = ('0' + now.getSeconds()).slice(-2);
+
+			const formattedTime =
+				year +
+				'年' +
+				month +
+				'月' +
+				day +
+				'日' +
+				hours +
+				':' +
+				minutes +
+				':' +
+				seconds;
+			window.localStorage.setItem('time', formattedTime);
+			this.time = formattedTime;
+
+			window.localStorage.setItem('obj', JSON.stringify(this.obj));
+
+			this.$message({
+				message: '已保存到缓存，下次继续使用！',
+				type: 'success',
+			});
+		},
+		// 切换语言
+		changeLangValue() {
+			if (this.obj !== undefined) {
+				this.$confirm(
+					`检测到${this.time}未保存的数据，是否继续使用上次数据？`,
+					'提示',
+					{
+						confirmButtonText: '确定',
+						cancelButtonText: '取消',
+						type: 'warning',
+					}
+				)
+					.then(() => {
+						this.$message({
+							type: 'success',
+							message: '已加载上次数据!',
+						});
+					})
+					.catch(() => {
+						this.obj = undefined;
+						this.time = '';
+						window.localStorage.removeItem('obj');
+						window.localStorage.removeItem('time');
+						this.$message({
+							type: 'info',
+							message: '已清除上次数据',
+						});
+					});
+			}
+		},
+
 		exportAsTextFile(textToExport, fileName) {
 			const blob = new Blob([textToExport], { type: 'text/plain' });
 			const url = window.URL.createObjectURL(blob);
@@ -1834,6 +1937,11 @@ export default {
 			const fileName = `${this.languageVlue}(${dateTime}).txt`;
 			this.exportAsTextFile(objectToExport, fileName);
 
+			this.obj = undefined;
+			this.time = '';
+			window.localStorage.removeItem('obj');
+			window.localStorage.removeItem('time');
+
 			this.$message({
 				message: '导出成功！',
 				type: 'success',
@@ -1850,6 +1958,31 @@ export default {
 				reader.readAsText(file);
 				reader.onload = (e) => {
 					this.obj = JSON.parse(e.target.result);
+					// 获取当前日期时间
+					const now = new Date();
+					const year = now.getFullYear();
+					const month = ('0' + (now.getMonth() + 1)).slice(-2);
+					const day = ('0' + now.getDate()).slice(-2);
+					const hours = ('0' + now.getHours()).slice(-2);
+					const minutes = ('0' + now.getMinutes()).slice(-2);
+					const seconds = ('0' + now.getSeconds()).slice(-2);
+
+					const formattedTime =
+						year +
+						'年' +
+						month +
+						'月' +
+						day +
+						'日' +
+						hours +
+						':' +
+						minutes +
+						':' +
+						seconds;
+					window.localStorage.setItem('time', formattedTime);
+					this.time = formattedTime;
+
+					window.localStorage.setItem('obj', JSON.stringify(this.obj));
 				};
 			};
 			input.click();
@@ -1870,7 +2003,7 @@ export default {
 }
 .fixed {
 	width: 250px;
-	height: 150px;
+	height: 200px;
 	padding-left: 20px;
 	position: fixed;
 	right: 35vw;
